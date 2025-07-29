@@ -1,0 +1,6 @@
+{
+    "require": {
+        "revolt/event-loop": "^1.0",
+        "predis/predis": "^3.1"
+    }
+}
