@@ -33,26 +33,9 @@ class Worker
 
     public function execute(): void
     {
-        $suspension = EventLoop::getSuspension();
+        while (true) {
+            usleep(50000);
 
-        for ($i=0; $i < self::EVENT_LOOP_QUANTITY; $i++) {
-            if ($i > 0) {
-                usleep(37500);
-            }
-
-            EventLoop::repeat(
-                self::EVENT_LOOP_SECONDS,
-                function (): void {
-                    $this->makeEvent();
-                }
-            );
-        }
-
-        $suspension->suspend();
-    }
-
-    public function makeEvent(): void
-    {
         $requests = (array) $this->client->lpop('requests', 250);
 
         foreach ($requests as $request) {
@@ -61,6 +44,7 @@ class Worker
             }
 
             $this->makePayment(json_decode($request, true));
+            }
         }
     }
 

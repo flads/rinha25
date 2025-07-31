@@ -11,17 +11,7 @@ x-service-templates:
         limits:
           cpus: "0.25"
           memory: "50MB"
-
-services:
-  api-1:
-    <<: *api
-    container_name: api-1
-
-  api-2:
-    <<: *api
-    container_name: api-2
-
-  worker:
+  worker: &worker
     build:
       context: ./worker
       dockerfile: ./Dockerfile
@@ -35,8 +25,25 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.40"
-          memory: "205MB"
+          cpus: "0.20"
+          memory: "102.5MB"
+
+services:
+  api-1:
+    <<: *api
+    container_name: api-1
+
+  api-2:
+    <<: *api
+    container_name: api-2
+
+  worker-1:
+    <<: *worker
+    container_name: worker-1
+
+  worker-2:
+    <<: *worker
+    container_name: worker-2
 
   nginx:
     image: nginx:latest
