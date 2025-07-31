@@ -53,9 +53,9 @@ class Worker
 
     public function makeEvent(): void
     {
-        for ($i=0; $i < 250; $i++) {
-            $request = $this->client->lpop('requests');
+        $requests = (array) $this->client->lpop('requests', 250);
 
+        foreach ($requests as $request) {
             if (!$request) {
                 break;
             }
