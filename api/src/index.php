@@ -21,7 +21,6 @@ class App
 
     private array $routes = [
         'GET' => [
-            '/payments/service-health' => 'paymentsServiceHealth',
             '/payments-summary' => 'paymentsSummary'
         ],
         'POST' => [

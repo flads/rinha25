@@ -6,74 +6,70 @@ require __DIR__ . '/Utils/Http.php';
 
 use Predis\Autoloader;
 use Predis\Client;
-use Revolt\EventLoop;
 
 class Worker
 {
-    const EVENT_LOOP_QUANTITY = 12;
-    const EVENT_LOOP_SECONDS = 1;
     const PAYMENT_PROCESSOR_DEFAULT_URL = 'http://payment-processor-default:8080';
     const PAYMENT_PROCESSOR_FALLBACK_URL = 'http://payment-processor-fallback:8080';
 
-    private Client $client;
-    private Http $httpClient;
+    private Client $redis;
+    private Http $http;
 
     public function __construct()
     {
         Autoloader::register();
         
-        $this->client = new Client([
+        $this->redis = new Client([
             'scheme' => 'tcp',
             'host'   => 'redis',
             'port'   => 6379,
         ]);
 
-        $this->httpClient = new Http();
+        $this->http = new Http();
     }
 
     public function execute(): void
     {
+        usleep(100000);
+
         while (true) {
-            usleep(50000);
+            $requests = (array) $this->redis->lpop('requests', 250);
 
-        $requests = (array) $this->client->lpop('requests', 250);
+            foreach ($requests as $request) {
+                if (!$request) {
+                    break;
+                }
 
-        foreach ($requests as $request) {
-            if (!$request) {
-                break;
-            }
-
-            $this->makePayment(json_decode($request, true));
+                $this->makePayment(json_decode($request, true));
             }
         }
     }
 
     public function makePayment(array $data): void
     {
-        $response = $this->httpClient->post(
+        $response = $this->http->post(
             self::PAYMENT_PROCESSOR_DEFAULT_URL . '/payments',
             $data
         );
 
         if ($response['statusCode'] === 200) {
             $this->addToRequestsLists('default_requests', $data);
+            return;
         }
 
-        if ($response["statusCode"] !== 200) {
-            $response = $this->httpClient->post(
-                self::PAYMENT_PROCESSOR_FALLBACK_URL . '/payments',
-                $data
-            );
+        $response = $this->http->post(
+            self::PAYMENT_PROCESSOR_FALLBACK_URL . '/payments',
+            $data
+        );
 
-            if ($response['statusCode'] === 200) {
-                $this->addToRequestsLists('fallback_requests', $data);
-            }
+        if ($response['statusCode'] === 200) {
+            $this->addToRequestsLists('fallback_requests', $data);
         }
     }
 
     private function addToRequestsLists(string $listName, array $data): void
     {
-        $this->client->zadd($listName, [
+        $this->redis->zadd($listName, [
             json_encode($data) => DateTimeUtils::strToTimeWithMicro($data['requestedAt'])
         ]);
     }
