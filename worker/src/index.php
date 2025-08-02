@@ -30,7 +30,7 @@ class Worker
 
     public function execute(): void
     {
-        usleep(100000);
+        usleep(250000);
 
         while (true) {
             $requests = (array) $this->redis->lpop('requests', 250);
