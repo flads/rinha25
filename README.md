@@ -1,9 +1,9 @@
-# Rinha de Backend 2025 - PHP
+# Rinha de Backend 2025
 
 Projetos feitos para a [Rinha de Backend 2025](https://github.com/zanfranceschi/rinha-de-backend-2025).
 
 - [PHP Puro](https://github.com/flads/rinha25-php/tree/master?tab=readme-ov-file#php-puro);
-- [PHP e Go](https://github.com/flads/rinha25-php/tree/master?tab=readme-ov-file#php-e-go);
+- [PHP e Go](https://github.com/flads/rinha25-php/tree/master?tab=readme-ov-file#php-e-go).
 
 ### PHP Puro
 
