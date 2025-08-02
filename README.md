@@ -2,12 +2,12 @@
 
 Projetos feitos para a [Rinha de Backend 2025](https://github.com/zanfranceschi/rinha-de-backend-2025).
 
-- [PHP Puro](https://github.com/flads/rinha25-php/tree/master?tab=readme-ov-file#php-puro);
-- [PHP e Go](https://github.com/flads/rinha25-php/tree/master?tab=readme-ov-file#php-e-go).
+- [PHP Puro](https://github.com/flads/rinha25/tree/php?tab=readme-ov-file#php-puro);
+- [PHP e Go](https://github.com/flads/rinha25/tree/php-go?tab=readme-ov-file#php-e-go).
 
 ### PHP Puro
 
-| branch: [master](https://github.com/flads/rinha25-php/tree/master)
+| branch: [php](https://github.com/flads/rinha25/tree/php)
 
 ##### Tecnologias utilizadas:
 
@@ -31,7 +31,7 @@ A tabela abaixo mostra como os recursos foram alocados:
 
 ### PHP e Go
 
-| branch: [php-go](https://github.com/flads/rinha25-php/tree/php-go)
+| branch: [php-go](https://github.com/flads/rinha25/tree/php-go)
 
 ##### Tecnologias utilizadas:
 
