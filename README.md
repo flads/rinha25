@@ -37,6 +37,7 @@ A tabela abaixo mostra como os recursos foram alocados:
 
 * [PHP](https://www.php.net/releases/8.4/en.php) - Linguagem de programação.
 * [Go](https://go.dev/) - Linguagem de programação.
+* [Echo](https://echo.labstack.com/) - Framework web Go de alto desempenho, extensível e minimalista.
 * [Redis](https://redis.io/) - Banco de dados em memória.
 * [Nginx](https://nginx.org/) - Servidor web HTTP e load balancer.
 
