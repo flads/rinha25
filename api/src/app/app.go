@@ -1,15 +1,16 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"src/datetime"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
-
-	"src/datetime"
+	"github.com/valyala/fasthttp"
 )
 
 type App struct {
@@ -26,34 +27,51 @@ func NewApp() *App {
 	}
 }
 
-func (a *App) SetupRoutes() {
-	http.HandleFunc("/payments", a.payments)
-	http.HandleFunc("/payments-summary", a.paymentsSummary)
-}
+func (a *App) ListenAndServe() {
+	fasthttp.ListenAndServe(":8080", func(ctx *fasthttp.RequestCtx) {
+		if ctx.IsPost() {
+			switch string(ctx.Path()) {
+			case "/payments":
+				a.payments(ctx)
+				return
+			}
+		}
 
-func (a *App) payments(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		if ctx.IsGet() {
+			switch string(ctx.Path()) {
+			case "/payments-summary":
+				a.paymentsSummary(ctx)
 		return
+			}
+		}
+
+		ctx.Error("Not found", fasthttp.StatusNotFound)
+	})
 	}
 
+func (a *App) payments(ctx *fasthttp.RequestCtx) {
 	var data map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+	if err := json.NewDecoder(bytes.NewReader(ctx.PostBody())).Decode(&data); err != nil {
+		ctx.Error("Invalid JSON", fasthttp.StatusBadRequest)
 		return
 	}
 
 	data["requestedAt"] = time.Now().Format(time.RFC3339)
 
 	encoded, _ := json.Marshal(data)
+
 	a.client.RPush(context.Background(), "requests", encoded)
 
-	w.WriteHeader(http.StatusNoContent)
+	ctx.SetStatusCode(fasthttp.StatusNoContent)
 }
 
-func (a *App) paymentsSummary(w http.ResponseWriter, r *http.Request) {
-	defaultList := a.getRequests("default_requests", r)
-	fallbackList := a.getRequests("fallback_requests", r)
+func (a *App) paymentsSummary(ctx *fasthttp.RequestCtx) {
+	postArgs := ctx.QueryArgs()
+	from := string(postArgs.Peek("from"))
+	to := string(postArgs.Peek("to"))
+
+	defaultList := a.getRequests("default_requests", from, to)
+	fallbackList := a.getRequests("fallback_requests", from, to)
 
 	resp := map[string]interface{}{
 		"default": map[string]interface{}{
@@ -66,14 +84,12 @@ func (a *App) paymentsSummary(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	ctx.Response.Header.Set("Content-Type", "application/json")
+	json.NewEncoder(ctx.Response.BodyWriter()).Encode(resp)
 }
 
-func (a *App) getRequests(listName string, r *http.Request) []string {
+func (a *App) getRequests(listName string, from string, to string) []string {
 	ctx := context.Background()
-	from := r.URL.Query().Get("from")
-	to := r.URL.Query().Get("to")
 
 	if from != "" && to != "" {
 		fromInt, err1 := datetime.StrToTimeWithMicro(from)
