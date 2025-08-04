@@ -35,7 +35,7 @@ func (a *App) execute() {
 	time.Sleep(250 * time.Millisecond)
 
 	for {
-		items, err := a.redis.LPopCount(context.Background(), "requests", 250).Result()
+		items, err := a.redis.LPopCount(context.Background(), "requests", 500).Result()
 		if err != nil {
 			if err != redis.Nil {
 				log.Println("Erro ao fazer LPOP COUNT:", err)
