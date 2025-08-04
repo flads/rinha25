@@ -12,6 +12,8 @@ class Worker
     const PAYMENT_PROCESSOR_DEFAULT_URL = 'http://payment-processor-default:8080';
     const PAYMENT_PROCESSOR_FALLBACK_URL = 'http://payment-processor-fallback:8080';
 
+    private bool $hasFailedRequestsToProcess = false;
+
     private Client $redis;
     private Http $http;
 
@@ -40,37 +42,105 @@ class Worker
                     break;
                 }
 
-                $this->makePayment(json_decode($request, true));
+                $this->callDefaultProcessor($request);
+            }
+
+            if (empty($requests) && $this->hasFailedRequestsToProcess) {
+                $this->processFailedRequests();
             }
         }
     }
 
-    public function makePayment(array $data): void
+    private function callDefaultProcessor(string $request): bool
     {
+        $data = json_decode($request, true);
+
         $response = $this->http->post(
             self::PAYMENT_PROCESSOR_DEFAULT_URL . '/payments',
-            $data
+            $request
         );
 
+        $isResponseOK = $response['statusCode'] === 200;
+
         if ($response['statusCode'] === 200) {
-            $this->addToRequestsLists('default_requests', $data);
-            return;
+            $score = DateTimeUtils::strToTimeWithMicro($data['requestedAt']);
+
+            $this->addToRequestsLists('default_requests', $request, $score);
+
+            return $isResponseOK;
         }
+
+        
+        $this->redis->rpush('failed_requests', $request);
+        $this->redis->set('default_failed_10_secs_ago', true, 'EX', 10);
+
+        $this->hasFailedRequestsToProcess = true;
+
+        return $isResponseOK;
+    }
+
+    private function callFallbackProcessor(string $request): bool
+    {
+        $data = json_decode($request, true);
 
         $response = $this->http->post(
             self::PAYMENT_PROCESSOR_FALLBACK_URL . '/payments',
-            $data
+            $request
         );
 
-        if ($response['statusCode'] === 200) {
-            $this->addToRequestsLists('fallback_requests', $data);
+        $isResponseOK = $response['statusCode'] === 200;
+
+        if ($isResponseOK) {
+            $score = DateTimeUtils::strToTimeWithMicro($data['requestedAt']);
+
+            $this->addToRequestsLists('fallback_requests', $request, $score);
+        }
+
+        return $isResponseOK;
+    }
+
+    private function processFailedRequests(): void
+    {
+        $defaultFailed10SecsAgo = $this->redis->get('default_failed_10_secs_ago');
+
+        if (!$defaultFailed10SecsAgo) {
+            $failedRequests = (array) $this->redis->lpop('failed_requests', 250);
+
+            if (empty($failedRequests)) {
+                $this->hasFailedRequestsToProcess = false;
+                return;
+            }
+
+            foreach ($failedRequests as $failedRequest) {
+                $isResponseOK = $this->callDefaultProcessor($failedRequest);
+
+                if ($isResponseOK) {
+                    continue;
+                }
+
+                $isFallbackResponseOK = $this->callFallbackProcessor($failedRequest);
+
+                if ($isFallbackResponseOK) {
+                    $data = json_decode($failedRequest, true);
+                    $score = DateTimeUtils::strToTimeWithMicro($data['requestedAt']);
+
+                    $this->addToRequestsLists('fallback_requests', $failedRequest, $score);
+                    continue;
+                }
+
+                $this->redis->rpush('failed_requests', $failedRequest);
+            }
         }
     }
 
-    private function addToRequestsLists(string $listName, array $data): void
+    private function addToRequestsLists(
+        string $listName,
+        string $request,
+        int $score
+    ): void
     {
         $this->redis->zadd($listName, [
-            json_encode($data) => DateTimeUtils::strToTimeWithMicro($data['requestedAt'])
+            $request => $score
         ]);
     }
 }

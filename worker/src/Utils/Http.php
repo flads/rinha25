@@ -20,7 +20,7 @@ class Http
         return $this->request('GET', $url, $data);
     }
 
-    public function post(string $url, ?array $data = null): ?array
+    public function post(string $url, ?string $data = null): ?array
     {
         try {
             return $this->request('POST', $url, $data);
@@ -32,13 +32,13 @@ class Http
     private function request(
         string $method,
         string $url,
-        ?array $data = null
+        ?string $data = null
     ): ?array
     {
         $this->options['http']['method'] = $method;
         
         if ($data) {
-            $this->options['http']['content'] = json_encode($data);
+            $this->options['http']['content'] = $data;
         }
 
         $response = file_get_contents(
@@ -55,7 +55,6 @@ class Http
         }
 
         return [
-            'data' => json_decode($response, true),
             'statusCode' => $this->getResponseStatusCode() ?? 200
         ];
     }
