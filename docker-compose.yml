@@ -9,7 +9,7 @@ x-service-templates:
     deploy:
       resources:
         limits:
-          cpus: "0.15"
+          cpus: "0.20"
           memory: "50MB"
   worker: &worker
     build:
@@ -25,7 +25,7 @@ x-service-templates:
     deploy:
       resources:
         limits:
-          cpus: "0.40"
+          cpus: "0.35"
           memory: "100MB"
 
 services:
