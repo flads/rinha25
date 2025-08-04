@@ -5,7 +5,7 @@ Projeto feito para a [Rinha de Backend 2025](https://github.com/zanfranceschi/ri
 ##### Tecnologias utilizadas:
 
 * [Go](https://go.dev/) - Linguagem de programação.
-* [Fast HTTP](https://github.com/valyala/fasthttp) - Fast HTTP package for Go..
+* [Fast HTTP](https://github.com/valyala/fasthttp) - Fast HTTP package for Go.
 * [Redis](https://redis.io/) - Banco de dados em memória.
 * [Nginx](https://nginx.org/) - Servidor web HTTP e load balancer.
 
@@ -15,10 +15,10 @@ A tabela abaixo mostra como os recursos foram alocados:
 
 | Serviço      | Linguagem | CPU  | Memória   |
 |--------------|-----------|------|-----------|
-| **api-1**    | Go        | 0.20 | 50MB      |
-| **api-2**    | Go        | 0.20 | 50MB      |
-| **worker-1** | Go        | 0.35 | 100MB     |
-| **worker-2** | Go        | 0.35 | 100MB     |
+| **api-1**    | Go        | 0.37 | 50MB      |
+| **api-2**    | Go        | 0.37 | 50MB      |
+| **worker-1** | Go        | 0.18 | 100MB     |
+| **worker-2** | Go        | 0.18 | 100MB     |
 | **nginx**    | -         | 0.20 | 20MB      |
 | **redis**    | -         | 0.20 | 30MB      |
 | **Total**    | -         | 1.50 | 350MB     |
