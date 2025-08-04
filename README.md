@@ -2,9 +2,9 @@
 
 Projetos feitos para a [Rinha de Backend 2025](https://github.com/zanfranceschi/rinha-de-backend-2025).
 
-- [PHP](https://github.com/flads/rinha25/tree/php?tab=readme-ov-file#php)
-- [PHP e Go](https://github.com/flads/rinha25/tree/php-go?tab=readme-ov-file#php-e-go)
-- [Go](https://github.com/flads/rinha25/tree/php-go?tab=readme-ov-file#go)
+- [PHP](https://github.com/flads/rinha25/tree/master?tab=readme-ov-file#php)
+- [PHP e Go](https://github.com/flads/rinha25/tree/master?tab=readme-ov-file#php-e-go)
+- [Go](https://github.com/flads/rinha25/tree/master?tab=readme-ov-file#go)
 
 ### PHP
 
