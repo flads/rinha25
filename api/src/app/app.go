@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"src/datetime"
-	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -41,13 +41,13 @@ func (a *App) ListenAndServe() {
 			switch string(ctx.Path()) {
 			case "/payments-summary":
 				a.paymentsSummary(ctx)
-		return
+				return
 			}
 		}
 
 		ctx.Error("Not found", fasthttp.StatusNotFound)
 	})
-	}
+}
 
 func (a *App) payments(ctx *fasthttp.RequestCtx) {
 	var data map[string]interface{}
@@ -56,13 +56,22 @@ func (a *App) payments(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	data["requestedAt"] = time.Now().Format(time.RFC3339)
-
-	encoded, _ := json.Marshal(data)
-
-	a.client.RPush(context.Background(), "requests", encoded)
+	data["requestedAt"] = time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
 
 	ctx.SetStatusCode(fasthttp.StatusNoContent)
+
+	go func() {
+		encoded, err := json.Marshal(data)
+		if err != nil {
+			log.Println("Erro ao codificar JSON:", err)
+			return
+		}
+
+		err = a.client.RPush(context.Background(), "requests", encoded).Err()
+		if err != nil {
+			log.Println("Erro ao gravar no Redis:", err)
+		}
+	}()
 }
 
 func (a *App) paymentsSummary(ctx *fasthttp.RequestCtx) {
