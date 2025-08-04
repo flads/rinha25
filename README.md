@@ -12,15 +12,15 @@ Projeto feito para a [Rinha de Backend 2025](https://github.com/zanfranceschi/ri
 
 A tabela abaixo mostra como os recursos foram alocados:
 
-| Serviço      | CPU  | Memória   |
-|--------------|------|-----------|
-|  **api-1**   | 0.25 | 50MB      |
-|  **api-2**   | 0.25 | 50MB      |
-| **worker-1** | 0.30 | 102.5MB   |
-| **worker-2** | 0.30 | 102.5MB   |
-|  **nginx**   | 0.15 | 15MB      |
-|  **redis**   | 0.25 | 30MB      |
-|  **Total**   | 1.50 | 350MB     |
+| Serviço      | Linguagem | CPU  | Memória   |
+|--------------|-----------|------|-----------|
+| **api-1**    | PHP       | 0.25 | 50MB      |
+| **api-2**    | PHP       | 0.25 | 50MB      |
+| **worker-1** | PHP       | 0.30 | 102.5MB   |
+| **worker-2** | PHP       | 0.30 | 102.5MB   |
+| **nginx**    | -         | 0.15 | 15MB      |
+| **redis**    | -         | 0.25 | 30MB      |
+| **Total**    | -         | 1.50 | 350MB     |
 
 ##### Arquitetura dos Serviços
 
