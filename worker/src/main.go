@@ -35,26 +35,19 @@ func (a *App) execute() {
 	time.Sleep(250 * time.Millisecond)
 
 	for {
-		time.Sleep(50 * time.Millisecond)
-
-		var requests []string
-
-		for i := 0; i < 250; i++ {
-			item, err := a.redis.LPop(context.Background(), "requests").Result()
-			if err == redis.Nil {
-				break
+		items, err := a.redis.LPopCount(context.Background(), "requests", 250).Result()
+		if err != nil {
+			if err != redis.Nil {
+				log.Println("Erro ao fazer LPOP COUNT:", err)
 			}
-
-			if err != nil {
-				log.Println("Error at LPOP:", err)
-				break
-			}
-			requests = append(requests, item)
+			time.Sleep(100 * time.Millisecond)
+			continue
 		}
 
-		for _, raw := range requests {
+		for _, raw := range items {
 			var data map[string]interface{}
 			if err := json.Unmarshal([]byte(raw), &data); err != nil {
+				log.Println("Erro ao decodificar JSON:", err)
 				continue
 			}
 
