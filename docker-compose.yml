@@ -9,8 +9,8 @@ x-service-templates:
     deploy:
       resources:
         limits:
-          cpus: "0.20"
-          memory: "50MB"
+          cpus: "0.15"
+          memory: "45MB"
   worker: &worker
     build:
       context: ./worker
@@ -26,7 +26,7 @@ x-service-templates:
       resources:
         limits:
           cpus: "0.35"
-          memory: "100MB"
+          memory: "90MB"
 
 services:
   api-1:
@@ -45,11 +45,10 @@ services:
     <<: *worker
     container_name: worker-2
 
-  nginx:
-    image: nginx:alpine
+  haproxy:
+    image: haproxy:latest
     volumes:
-      - ./nginx:/var/www
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
     ports:
       - "9999:9999"
     networks:
@@ -62,8 +61,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.20"
-          memory: "20MB"
+          cpus: "0.3"
+          memory: "50MB"
 
   redis:
     image: redis:alpine
@@ -75,7 +74,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.20"
+          cpus: "0.2"
           memory: "30MB"
 
 networks:
