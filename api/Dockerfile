@@ -9,12 +9,13 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /src/app *.go
 
 FROM alpine:latest
 
-RUN adduser -D api
-USER api
+COPY --from=builder /src/app /home/app
 
-COPY --from=builder /src/app /home/api/app
+WORKDIR /home/app
 
-WORKDIR /home/api/app
+RUN mkdir -p /tmp/sockets 
+RUN chmod -R 770 /tmp/sockets
+RUN chown -R 1000:1001 /tmp/sockets
 
 EXPOSE 8080
 
