@@ -6,6 +6,7 @@ require __DIR__ . '/Utils/Http.php';
 
 use Predis\Autoloader;
 use Predis\Client;
+use Ramsey\Uuid\Uuid;
 
 class Worker
 {
@@ -63,14 +64,11 @@ class Worker
         $isResponseOK = $response['statusCode'] === 200;
 
         if ($response['statusCode'] === 200) {
-            $score = DateTimeUtils::strToTimeWithMicro($data['requestedAt']);
-
-            $this->addToRequestsLists('default_requests', $request, $score);
+            $this->addToRequestsLists('default_requests', $data);
 
             return $isResponseOK;
         }
 
-        
         $this->redis->rpush('failed_requests', $request);
         $this->redis->set('default_failed_10_secs_ago', true, 'EX', 10);
 
@@ -91,9 +89,7 @@ class Worker
         $isResponseOK = $response['statusCode'] === 200;
 
         if ($isResponseOK) {
-            $score = DateTimeUtils::strToTimeWithMicro($data['requestedAt']);
-
-            $this->addToRequestsLists('fallback_requests', $request, $score);
+            $this->addToRequestsLists('fallback_requests', $data);
         }
 
         return $isResponseOK;
@@ -122,9 +118,7 @@ class Worker
 
                 if ($isFallbackResponseOK) {
                     $data = json_decode($failedRequest, true);
-                    $score = DateTimeUtils::strToTimeWithMicro($data['requestedAt']);
-
-                    $this->addToRequestsLists('fallback_requests', $failedRequest, $score);
+                    $this->addToRequestsLists('fallback_requests', $data);
                     continue;
                 }
 
@@ -135,12 +129,17 @@ class Worker
 
     private function addToRequestsLists(
         string $listName,
-        string $request,
-        int $score
+        array $data
     ): void
     {
+        $score = DateTimeUtils::strToTimeWithMicro($data['requestedAt']);
+        $amount = ((float) $data['amount']) * 100;
+        $uuid = Uuid::uuid4()->toString();
+
+        $member = "{$amount}|{$uuid}";
+
         $this->redis->zadd($listName, [
-            $request => $score
+            $member => $score
         ]);
     }
 }
