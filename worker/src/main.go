@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 )
 
@@ -88,17 +90,25 @@ func (a *App) addToRequestsLists(listName string, data map[string]interface{}) {
 		return
 	}
 
+	amount, ok := data["amount"].(float64)
+	if !ok {
+		return
+	}
+
+	amount = (amount * 100)
+	uuid := uuid.New()
+
+	member := fmt.Sprintf("%v|%s", amount, uuid.String())
+
 	score, err := StrToTimeWithMicro(requestedAt)
 	if err != nil {
 		log.Println("Error in timestamp conversion:", err)
 		return
 	}
 
-	value, _ := json.Marshal(data)
-
 	a.redis.ZAdd(context.Background(), listName, &redis.Z{
 		Score:  float64(score),
-		Member: value,
+		Member: member,
 	})
 }
 
