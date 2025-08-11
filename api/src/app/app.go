@@ -1,18 +1,20 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"src/datetime"
+	"strconv"
+	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/valyala/fasthttp"
 )
 
 type App struct {
@@ -30,16 +32,6 @@ func NewApp() *App {
 }
 
 func (a *App) ListenAndServe() {
-	router := gin.Default()
-
-	router.POST("/payments", func(ctx *gin.Context) {
-		a.payments(ctx)
-	})
-
-	router.GET("/payments-summary", func(ctx *gin.Context) {
-		a.paymentsSummary(ctx)
-	})
-
 	socketPath := os.Getenv("SOCKET_PATH")
 	if socketPath == "" {
 		socketPath = "/sockets/api-default.sock"
@@ -60,19 +52,39 @@ func (a *App) ListenAndServe() {
 		log.Fatal("Erro ao definir permissões do socket:", err)
 	}
 
-	http.Serve(listener, router)
+	requestHandler := func(ctx *fasthttp.RequestCtx) {
+		if ctx.IsPost() {
+			switch string(ctx.Path()) {
+			case "/payments":
+				a.payments(ctx)
+				return
+			}
+		}
+
+		if ctx.IsGet() {
+			switch string(ctx.Path()) {
+			case "/payments-summary":
+				a.paymentsSummary(ctx)
+				return
+			}
+		}
+
+		ctx.Error("Not found", fasthttp.StatusNotFound)
+	}
+
+	fasthttp.Serve(listener, requestHandler)
 }
 
-func (a *App) payments(ctx *gin.Context) {
+func (a *App) payments(ctx *fasthttp.RequestCtx) {
 	var data map[string]interface{}
-	if err := json.NewDecoder(ctx.Request.Body).Decode(&data); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Error"})
+	if err := json.NewDecoder(bytes.NewReader(ctx.PostBody())).Decode(&data); err != nil {
+		ctx.Error("Invalid JSON", fasthttp.StatusBadRequest)
 		return
 	}
 
 	data["requestedAt"] = time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
 
-	ctx.Status(http.StatusNoContent)
+	ctx.Response.SetStatusCode(fasthttp.StatusNoContent)
 
 	go func() {
 		encoded, err := json.Marshal(data)
@@ -88,9 +100,10 @@ func (a *App) payments(ctx *gin.Context) {
 	}()
 }
 
-func (a *App) paymentsSummary(c *gin.Context) {
-	from := c.Query("from")
-	to := c.Query("to")
+func (a *App) paymentsSummary(ctx *fasthttp.RequestCtx) {
+	postArgs := ctx.QueryArgs()
+	from := string(postArgs.Peek("from"))
+	to := string(postArgs.Peek("to"))
 
 	defaultList := a.getRequests("default_requests", from, to)
 	fallbackList := a.getRequests("fallback_requests", from, to)
@@ -106,7 +119,8 @@ func (a *App) paymentsSummary(c *gin.Context) {
 		},
 	}
 
-	c.JSON(http.StatusOK, resp)
+	ctx.Response.Header.Set("Content-Type", "application/json")
+	json.NewEncoder(ctx.Response.BodyWriter()).Encode(resp)
 }
 
 func (a *App) getRequests(listName string, from string, to string) []string {
