@@ -148,10 +148,10 @@ func (a *App) getRequestsAmountSum(requests []string) float64 {
 	sum := 0.0
 
 	for _, item := range requests {
-		var data map[string]interface{}
-		if err := json.Unmarshal([]byte(item), &data); err == nil {
-			if amt, ok := data["amount"].(float64); ok {
-				sum += amt
+		parts := strings.Split(item, "|")
+		if len(parts) > 0 {
+			if amt, err := strconv.ParseFloat(parts[0], 64); err == nil {
+				sum += (amt / 100.0)
 			}
 		}
 	}
