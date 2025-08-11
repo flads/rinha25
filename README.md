@@ -6,7 +6,7 @@ Projeto feito para a [Rinha de Backend 2025](https://github.com/zanfranceschi/ri
 
 * [PHP](https://www.php.net/releases/8.4/en.php) - Linguagem de programação.
 * [Go](https://go.dev/) - Linguagem de programação.
-* [Gin](https://gin-gonic.com/) - The fastest full-featured web framework for Go. Crystal clear.
+* [Fast HTTP](https://github.com/valyala/fasthttp) - Servidor HTTP de alto desempenho em Go.
 * [Redis](https://redis.io/) - Banco de dados em memória.
 * [HAProxy](https://www.haproxy.org/) - Proxy reverso e balanceador de carga de alto desempenho.
 
