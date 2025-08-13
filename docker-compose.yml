@@ -7,12 +7,35 @@ x-service-templates:
     networks:
       - main-network
       - payment-processor
+
+services:
+  api-1:
+    <<: *api
+    container_name: api-1
+    volumes:
+      - sockets:/tmp/sockets
+    environment:
+      - SOCKET_PATH=/tmp/sockets/api-1.sock
     deploy:
       resources:
         limits:
           cpus: "0.15"
-          memory: "45MB"
-  worker: &worker
+          memory: "50MB"
+
+  api-2:
+    <<: *api
+    container_name: api-2
+    volumes:
+      - sockets:/tmp/sockets
+    environment:
+      - SOCKET_PATH=/tmp/sockets/api-2.sock
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: "50MB"
+
+  worker:
     build:
       context: ./worker
       dockerfile: ./Dockerfile
@@ -26,33 +49,8 @@ x-service-templates:
     deploy:
       resources:
         limits:
-          cpus: "0.35"
-          memory: "90MB"
-
-services:
-  api-1:
-    <<: *api
-    container_name: api-1
-    volumes:
-      - sockets:/tmp/sockets
-    environment:
-      - SOCKET_PATH=/tmp/sockets/api-1.sock
-
-  api-2:
-    <<: *api
-    container_name: api-2
-    volumes:
-      - sockets:/tmp/sockets
-    environment:
-      - SOCKET_PATH=/tmp/sockets/api-2.sock
-
-  worker-1:
-    <<: *worker
-    container_name: worker-1
-
-  worker-2:
-    <<: *worker
-    container_name: worker-2
+          cpus: "0.6"
+          memory: "150MB"
 
   haproxy:
     image: haproxy:alpine
@@ -76,17 +74,33 @@ services:
           memory: "50MB"
 
   redis:
-    image: redis:alpine
+    image: valkey/valkey:8.1-alpine
     ports:
       - '6379:6379'
     networks:
       - main-network
-    command: ["redis-server"]
+    command: >
+      redis-server
+      --save ""
+      --appendonly no
+      --maxmemory 50mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 30
+      --timeout 0
+      --tcp-backlog 65535
+      --databases 1
+      --maxclients 5000
+      --rdbcompression no
+      --rdbchecksum no
+      --hz 100
+      --lazyfree-lazy-eviction yes
+      --lazyfree-lazy-expire yes
+      --lazyfree-lazy-server-del yes
     deploy:
       resources:
         limits:
-          cpus: "0.2"
-          memory: "30MB"
+          cpus: "0.3"
+          memory: "50MB"
 
 volumes:
   sockets:

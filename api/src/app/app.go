@@ -145,16 +145,16 @@ func (a *App) getRequests(listName string, from string, to string) []string {
 }
 
 func (a *App) getRequestsAmountSum(requests []string) float64 {
-	sum := 0.0
+	sum := 0
 
 	for _, item := range requests {
 		parts := strings.Split(item, "|")
 		if len(parts) > 0 {
-			if amt, err := strconv.ParseFloat(parts[0], 64); err == nil {
-				sum += (amt / 100.0)
+			if amt, err := strconv.Atoi(parts[0]); err == nil {
+				sum += amt
 			}
 		}
 	}
 
-	return float64(int(sum*100)) / 100.0
+	return float64(int(sum)) / 100.0
 }
