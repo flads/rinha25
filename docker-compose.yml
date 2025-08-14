@@ -1,12 +1,20 @@
 x-service-templates:
   api: &api
-    build:
-      context: ./api
-      dockerfile: ./Dockerfile
+    image: flads/rinha25-php-go-api:0.3.1
     user: "1000:1001"
     networks:
       - main-network
       - payment-processor
+
+  worker: &worker
+    image: flads/rinha25-php-go-worker:0.1.0
+    container_name: worker
+    networks:
+      - main-network
+      - payment-processor
+    depends_on:
+      redis:
+        condition: service_started
 
 services:
   api-1:
@@ -35,29 +43,29 @@ services:
           cpus: "0.15"
           memory: "50MB"
 
-  worker:
-    build:
-      context: ./worker
-      dockerfile: ./Dockerfile
-    container_name: worker
-    networks:
-      - main-network
-      - payment-processor
-    depends_on:
-      redis:
-        condition: service_started
+  worker-1:
+    <<: *worker
+    container_name: worker-1
     deploy:
       resources:
         limits:
-          cpus: "0.6"
-          memory: "150MB"
+          cpus: "0.30"
+          memory: "75MB"
+
+  worker-2:
+    <<: *worker
+    container_name: worker-2
+    deploy:
+      resources:
+        limits:
+          cpus: "0.30"
+          memory: "75MB"
 
   nginx:
     image: nginx:alpine
     volumes:
       - ./nginx:/var/www
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx-cache:/var/cache/nginx
       - sockets:/sockets
     user: "1000:1001"
     ports:

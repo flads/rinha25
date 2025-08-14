@@ -8,7 +8,7 @@ Projeto feito para a [Rinha de Backend 2025](https://github.com/zanfranceschi/ri
 * [Go](https://go.dev/) - Linguagem de programação.
 * [Fast HTTP](https://github.com/valyala/fasthttp) - Servidor HTTP de alto desempenho em Go.
 * [Redis](https://redis.io/) - Banco de dados em memória.
-* [HAProxy](https://www.haproxy.org/) - Proxy reverso e balanceador de carga de alto desempenho.
+* [Nginx](https://nginx.org/) - Proxy reverso e balanceador de carga.
 
 ##### Solução
 
@@ -16,13 +16,13 @@ A tabela abaixo mostra como os recursos foram alocados:
 
 | Serviço      | Linguagem | CPU  | Memória   |
 |--------------|-----------|------|-----------|
-| **api-1**    | Go        | 0.15 | 45MB      |
-| **api-2**    | Go        | 0.15 | 45MB      |
-| **worker-1** | PHP       | 0.35 | 90MB      |
-| **worker-2** | PHP       | 0.35 | 90MB      |
-| **haproxy**  | -         | 0.30 | 50MB      |
-| **redis**    | -         | 0.20 | 30MB      |
-| **Total**    | -         | 1.50 | 350MB     |
+| **api-1**    | Go        | 0.15 | 50MB      |
+| **api-2**    | Go        | 0.15 | 50MB      |
+| **worker-1** | PHP       | 0.3  | 75MB      |
+| **worker-2** | PHP       | 0.3  | 75MB      |
+| **nginx**    | -         | 0.3  | 50MB      |
+| **redis**    | -         | 0.3  | 50MB      |
+| **Total**    | -         | 1.5  | 350MB     |
 
 ##### Arquitetura dos Serviços
 
