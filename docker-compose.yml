@@ -47,6 +47,19 @@ services:
           cpus: "0.15"
           memory: "50MB"
 
+  database:
+    build:
+      context: ./database
+      dockerfile: ./Dockerfile
+    networks:
+      - main-network
+    container_name: database
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: "50MB"
+
   worker-1:
     <<: *worker
     container_name: worker-1

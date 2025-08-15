@@ -36,6 +36,7 @@ class Worker
         usleep(250000);
 
         while (true) {
+            usleep(10000);
             $requests = (array) $this->redis->lpop('requests', 250);
 
             foreach ($requests as $request) {
@@ -52,6 +53,16 @@ class Worker
         }
     }
 
+    private function sendToProcessorApi(string $url, array $data): void
+    {
+        $payload = json_encode([
+            'timestamp' => DateTimeUtils::strToTimeWithMicro($data['requestedAt']),
+            'amount'    => (float) $data['amount'],
+        ]);
+
+        $this->http->post($url, $payload);
+    }
+
     private function callDefaultProcessor(string $request): bool
     {
         $data = json_decode($request, true);
@@ -63,15 +74,14 @@ class Worker
 
         $isResponseOK = $response['statusCode'] === 200;
 
-        if ($response['statusCode'] === 200) {
-            $this->addToRequestsLists('default_requests', $data);
+        if ($isResponseOK) {
+            $this->sendToProcessorApi('http://database:8081/processor-default', $data);
 
             return $isResponseOK;
         }
 
         $this->redis->rpush('failed_requests', $request);
         $this->redis->set('default_failed_10_secs_ago', true, 'EX', 10);
-
         $this->hasFailedRequestsToProcess = true;
 
         return $isResponseOK;
@@ -89,11 +99,12 @@ class Worker
         $isResponseOK = $response['statusCode'] === 200;
 
         if ($isResponseOK) {
-            $this->addToRequestsLists('fallback_requests', $data);
+            $this->sendToProcessorApi('http://database:8081/processor-fallback', $data);
         }
 
         return $isResponseOK;
     }
+
 
     private function processFailedRequests(): void
     {
@@ -117,30 +128,12 @@ class Worker
                 $isFallbackResponseOK = $this->callFallbackProcessor($failedRequest);
 
                 if ($isFallbackResponseOK) {
-                    $data = json_decode($failedRequest, true);
-                    $this->addToRequestsLists('fallback_requests', $data);
                     continue;
                 }
 
                 $this->redis->rpush('failed_requests', $failedRequest);
             }
         }
-    }
-
-    private function addToRequestsLists(
-        string $listName,
-        array $data
-    ): void
-    {
-        $score = DateTimeUtils::strToTimeWithMicro($data['requestedAt']);
-        $amount = ((float) $data['amount']) * 100;
-        $uuid = Uuid::uuid4()->toString();
-
-        $member = "{$amount}|{$uuid}";
-
-        $this->redis->zadd($listName, [
-            $member => $score
-        ]);
     }
 }
 

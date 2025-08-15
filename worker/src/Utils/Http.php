@@ -47,7 +47,14 @@ class Http
             stream_context_create($this->options)
         );
 
-        if (!$response) {
+        $responseData = json_decode($response, true);
+
+        error_log("response: " . print_r($responseData, true));
+
+        if (
+            !$responseData ||
+            (isset($responseData['message']) && $responseData['message'] !== 'payment processed successfully')
+        ) {
             return [
                 'data' => json_decode($response, true),
                 'statusCode' => $this->getResponseStatusCode() ?? 500

@@ -101,26 +101,42 @@ func (a *App) payments(ctx *fasthttp.RequestCtx) {
 }
 
 func (a *App) paymentsSummary(ctx *fasthttp.RequestCtx) {
-	postArgs := ctx.QueryArgs()
-	from := string(postArgs.Peek("from"))
-	to := string(postArgs.Peek("to"))
+	// Pegar query params
+	args := ctx.QueryArgs()
+	query := ""
 
-	defaultList := a.getRequests("default_requests", from, to)
-	fallbackList := a.getRequests("fallback_requests", from, to)
-
-	resp := map[string]interface{}{
-		"default": map[string]interface{}{
-			"totalRequests": len(defaultList),
-			"totalAmount":   a.getRequestsAmountSum(defaultList),
-		},
-		"fallback": map[string]interface{}{
-			"totalRequests": len(fallbackList),
-			"totalAmount":   a.getRequestsAmountSum(fallbackList),
-		},
+	if from := string(args.Peek("from")); from != "" {
+		query += "from=" + from
 	}
 
+	if to := string(args.Peek("to")); to != "" {
+		if query != "" {
+			query += "&"
+		}
+		query += "to=" + to
+	}
+
+	url := "http://database:8081/payments-summary"
+	if query != "" {
+		url += "?" + query
+	}
+
+	// Fazer requisição GET
+	status, body, err := fasthttp.Get(nil, url)
+	if err != nil {
+		ctx.Error(fmt.Sprintf("Erro ao chamar serviço externo: %v", err), fasthttp.StatusInternalServerError)
+		return
+	}
+
+	if status != fasthttp.StatusOK {
+		ctx.Error(fmt.Sprintf("Serviço externo retornou status %d", status), status)
+		return
+	}
+
+	// Retornar diretamente o corpo da outra API
 	ctx.Response.Header.Set("Content-Type", "application/json")
-	json.NewEncoder(ctx.Response.BodyWriter()).Encode(resp)
+	ctx.Response.SetStatusCode(fasthttp.StatusOK)
+	ctx.Response.SetBody(body)
 }
 
 func (a *App) getRequests(listName string, from string, to string) []string {
