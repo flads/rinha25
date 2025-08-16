@@ -9,8 +9,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /src/app *.go
 
 FROM alpine:latest
 
-COPY --from=builder /src/app /home/worker/main
+RUN mkdir -p /home/app
 
-WORKDIR /home/worker
+COPY --from=builder /src/app /home/app
 
-CMD ["./main"]
+WORKDIR /home/app
+
+EXPOSE 8081
+
+CMD ["./app"]

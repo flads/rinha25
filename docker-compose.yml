@@ -31,7 +31,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.15"
+          # cpus: "0.2"
+          cpus: "0.066"
           memory: "50MB"
 
   api-2:
@@ -44,8 +45,24 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.15"
+          # cpus: "0.2"
+          cpus: "0.066"
           memory: "50MB"
+
+  database:
+    build:
+      context: ./database
+      dockerfile: ./Dockerfile
+    networks:
+      - main-network
+      - payment-processor
+    container_name: database
+    deploy:
+      resources:
+        limits:
+          # cpus: "0.3"
+          cpus: "0.1"
+          memory: "100MB"
 
   worker-1:
     <<: *worker
@@ -53,8 +70,9 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.4"
-          memory: "100MB"
+          # cpus: "0.2"
+          cpus: "0.066"
+          memory: "50MB"
 
   worker-2:
     <<: *worker
@@ -62,8 +80,9 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.4"
-          memory: "100MB"
+          # cpus: "0.2"
+          cpus: "0.066"
+          memory: "50MB"
 
   nginx:
     image: nginx:alpine
@@ -84,7 +103,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.2"
+          # cpus: "0.2"
+          cpus: "0.066"
           memory: "20MB"
 
   redis:
