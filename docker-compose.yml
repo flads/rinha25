@@ -53,6 +53,7 @@ services:
       dockerfile: ./Dockerfile
     networks:
       - main-network
+      - payment-processor
     container_name: database
     deploy:
       resources:

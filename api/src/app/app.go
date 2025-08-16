@@ -1,16 +1,11 @@
 package app
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
-	"src/datetime"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -76,24 +71,15 @@ func (a *App) ListenAndServe() {
 }
 
 func (a *App) payments(ctx *fasthttp.RequestCtx) {
-	var data map[string]interface{}
-	if err := json.NewDecoder(bytes.NewReader(ctx.PostBody())).Decode(&data); err != nil {
-		ctx.Error("Invalid JSON", fasthttp.StatusBadRequest)
-		return
-	}
+	body := ctx.PostBody()
+	requestedAt := time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
 
-	data["requestedAt"] = time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
+	body = append([]byte(requestedAt+"@"), body...)
 
 	ctx.Response.SetStatusCode(fasthttp.StatusNoContent)
 
 	go func() {
-		encoded, err := json.Marshal(data)
-		if err != nil {
-			log.Println("Erro ao codificar JSON:", err)
-			return
-		}
-
-		err = a.client.RPush(context.Background(), "requests", encoded).Err()
+		err := a.client.RPush(context.Background(), "requests", body).Err()
 		if err != nil {
 			log.Println("Erro ao gravar no Redis:", err)
 		}
@@ -137,40 +123,4 @@ func (a *App) paymentsSummary(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.Set("Content-Type", "application/json")
 	ctx.Response.SetStatusCode(fasthttp.StatusOK)
 	ctx.Response.SetBody(body)
-}
-
-func (a *App) getRequests(listName string, from string, to string) []string {
-	ctx := context.Background()
-
-	if from != "" && to != "" {
-		fromInt, err1 := datetime.StrToTimeWithMicro(from)
-		toInt, err2 := datetime.StrToTimeWithMicro(to)
-
-		if err1 == nil && err2 == nil {
-			vals, _ := a.client.ZRangeByScore(ctx, listName, &redis.ZRangeBy{
-				Min: fmt.Sprintf("%d", fromInt),
-				Max: fmt.Sprintf("%d", toInt),
-			}).Result()
-
-			return vals
-		}
-	}
-
-	vals, _ := a.client.ZRange(ctx, listName, 0, -1).Result()
-	return vals
-}
-
-func (a *App) getRequestsAmountSum(requests []string) float64 {
-	sum := 0
-
-	for _, item := range requests {
-		parts := strings.Split(item, "|")
-		if len(parts) > 0 {
-			if amt, err := strconv.Atoi(parts[0]); err == nil {
-				sum += amt
-			}
-		}
-	}
-
-	return float64(int(sum)) / 100.0
 }

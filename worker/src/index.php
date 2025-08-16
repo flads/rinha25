@@ -2,11 +2,11 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/Utils/DateTimeUtils.php';
+require __DIR__ . '/Utils/StringUtils.php';
 require __DIR__ . '/Utils/Http.php';
 
 use Predis\Autoloader;
 use Predis\Client;
-use Ramsey\Uuid\Uuid;
 
 class Worker
 {
@@ -53,19 +53,10 @@ class Worker
         }
     }
 
-    private function sendToProcessorApi(string $url, array $data): void
-    {
-        $payload = json_encode([
-            'timestamp' => DateTimeUtils::strToTimeWithMicro($data['requestedAt']),
-            'amount'    => (float) $data['amount'],
-        ]);
-
-        $this->http->post($url, $payload);
-    }
-
     private function callDefaultProcessor(string $request): bool
     {
-        $data = json_decode($request, true);
+        list($requestedAt, $jsonPart) = explode('@', $request, 2);
+        $request = StringUtils::injectRequestedAt($jsonPart, $requestedAt);
 
         $response = $this->http->post(
             self::PAYMENT_PROCESSOR_DEFAULT_URL . '/payments',
@@ -75,8 +66,10 @@ class Worker
         $isResponseOK = $response['statusCode'] === 200;
 
         if ($isResponseOK) {
-            $this->sendToProcessorApi('http://database:8081/processor-default', $data);
-
+            $this->http->post(
+                'http://database:8081/processor-default',
+                $request
+            );
             return $isResponseOK;
         }
 
@@ -89,7 +82,8 @@ class Worker
 
     private function callFallbackProcessor(string $request): bool
     {
-        $data = json_decode($request, true);
+        list($requestedAt, $jsonPart) = explode('@', $request, 2);
+        $request = StringUtils::injectRequestedAt($jsonPart, $requestedAt);
 
         $response = $this->http->post(
             self::PAYMENT_PROCESSOR_FALLBACK_URL . '/payments',
@@ -99,7 +93,11 @@ class Worker
         $isResponseOK = $response['statusCode'] === 200;
 
         if ($isResponseOK) {
-            $this->sendToProcessorApi('http://database:8081/processor-fallback', $data);
+            $this->http->post(
+                'http://database:8081/processor-fallback',
+                $request
+            );
+            return $isResponseOK;
         }
 
         return $isResponseOK;
@@ -130,8 +128,6 @@ class Worker
                 if ($isFallbackResponseOK) {
                     continue;
                 }
-
-                $this->redis->rpush('failed_requests', $failedRequest);
             }
         }
     }
